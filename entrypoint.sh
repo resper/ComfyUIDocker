@@ -86,4 +86,4 @@ cd "${COMFY_DIR}"
 exec python main.py \
   --port "${COMFY_PORT}" \
   --listen 0.0.0.0 \
-  --auto-launch=False
+  --disable-auto-launch
