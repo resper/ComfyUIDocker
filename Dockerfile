@@ -1,7 +1,5 @@
-# CUDA Runtime + Ubuntu 22.04 → GPU auf RunPod
 FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
-# Nicht-interaktiv
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -17,19 +15,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg libsm6 libxext6 libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
-# App-User
-RUN useradd -ms /bin/bash app
+# App-User + Verzeichnis vorbereiten (als root!)
+RUN useradd -ms /bin/bash app \
+ && mkdir -p /opt/ComfyUI /workspace \
+ && chown -R app:app /opt/ComfyUI /workspace /home/app
+
+# Ab hier erst als app weiter
 USER app
 WORKDIR /home/app
 
-# Python venv
+# venv
 RUN python3 -m venv /home/app/venv
 ENV PATH="/home/app/venv/bin:${PATH}"
 
-# ComfyUI klonen (ohne Modelle)
+# ComfyUI klonen (jetzt erlaubt, weil /opt/ComfyUI app gehört)
 RUN git clone --branch ${COMFY_BRANCH} --depth 1 https://github.com/comfyanonymous/ComfyUI.git ${COMFY_DIR}
 
-# Basis-Python-Abhängigkeiten (Core)
 WORKDIR ${COMFY_DIR}
 RUN pip install --upgrade pip \
     && if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
