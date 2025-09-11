@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: your-dockerhub-username/comfyui-runpod
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/comfyui-runpod
 
 jobs:
   build:
