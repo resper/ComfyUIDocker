@@ -77,6 +77,12 @@ jobs:
           # Cleanup
           docker stop test-container || true
 
+      - name: Generate build timestamp
+        id: timestamp
+        run: |
+          echo "date=$(date +%Y%m%d)" >> $GITHUB_OUTPUT
+          echo "datetime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+
       - name: Build & Push Production
         if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v6
@@ -88,11 +94,11 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ env.IMAGE_NAME }}:$(date +%Y%m%d)
+            ${{ env.IMAGE_NAME }}:${{ steps.timestamp.outputs.date }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
           build-args: |
-            BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+            BUILD_DATE=${{ steps.timestamp.outputs.datetime }}
             VCS_REF=${{ github.sha }}
             VERSION=${{ github.run_number }}
 
