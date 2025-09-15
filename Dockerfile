@@ -5,49 +5,43 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     COMFY_PORT=8188 \
     COMFY_BRANCH=master \
-    COMFY_DIR=/opt/ComfyUI \
     WORKSPACE=/workspace
 
 # Systempakete
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-venv python3-pip python3-dev \
-    git wget curl ca-certificates \
+    git wget curl ca-certificates rsync \
     ffmpeg libsm6 libxext6 libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
-# App-User + Verzeichnis vorbereiten (als root!)
+# App-User + Verzeichnisse
 RUN useradd -ms /bin/bash app \
- && mkdir -p /opt/ComfyUI /workspace \
- && chown -R app:app /opt/ComfyUI /workspace /home/app
+    && mkdir -p /workspace /opt/ComfyUI-template \
+    && chown -R app:app /workspace /opt/ComfyUI-template /home/app
 
-# Ab hier erst als app weiter
 USER app
 WORKDIR /home/app
 
-# venv
-RUN python3 -m venv /home/app/venv
-ENV PATH="/home/app/venv/bin:${PATH}"
+# Template ComfyUI für erste Initialisierung
+RUN git clone --branch ${COMFY_BRANCH} --depth 1 \
+    https://github.com/comfyanonymous/ComfyUI.git /opt/ComfyUI-template
 
-# ComfyUI klonen (jetzt erlaubt, weil /opt/ComfyUI app gehört)
-RUN git clone --branch ${COMFY_BRANCH} --depth 1 https://github.com/comfyanonymous/ComfyUI.git ${COMFY_DIR}
-
-WORKDIR ${COMFY_DIR}
-RUN pip install --upgrade pip \
-    && if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+# Base Requirements im Template installieren
+RUN python3 -m venv /opt/ComfyUI-template/venv \
+    && /opt/ComfyUI-template/venv/bin/pip install --upgrade pip \
+    && /opt/ComfyUI-template/venv/bin/pip install -r /opt/ComfyUI-template/requirements.txt
 
 # Ports & Healthcheck
 EXPOSE ${COMFY_PORT}
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=5 \
-  CMD curl -fsS "http://127.0.0.1:${COMFY_PORT}" || exit 1
+    CMD curl -fsS "http://127.0.0.1:${COMFY_PORT}" || exit 1
 
-# Verzeichnisse für Persistenz (werden später gemountet/symlinked)
 VOLUME ["/workspace"]
 
-# Entrypoint kopieren
+# Entrypoint
 USER root
 COPY --chown=app:app entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 USER app
 
-# Standard-Start
 ENTRYPOINT ["/entrypoint.sh"]
