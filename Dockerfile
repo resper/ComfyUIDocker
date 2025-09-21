@@ -4,6 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     COMFY_PORT=8188 \
+    FILEBROWSER_PORT=8080 \
     COMFY_BRANCH=master \
     WORKSPACE=/workspace
 
@@ -32,14 +33,19 @@ RUN python3 -m venv /opt/ComfyUI-template/venv \
     && /opt/ComfyUI-template/venv/bin/pip install -r /opt/ComfyUI-template/requirements.txt
 
 # Ports & Healthcheck
-EXPOSE ${COMFY_PORT}
+EXPOSE ${COMFY_PORT} ${FILEBROWSER_PORT}
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=5 \
     CMD curl -fsS "http://127.0.0.1:${COMFY_PORT}" || exit 1
 
 VOLUME ["/workspace"]
 
-# Entrypoint
 USER root
+# Filebrowser herunterladen und installieren
+RUN curl -fsSL https://github.com/filebrowser/filebrowser/releases/latest/download/linux-amd64-filebrowser.tar.gz -o /tmp/fb.tar.gz \
+    && tar -xzf /tmp/fb.tar.gz -C /usr/local/bin filebrowser \
+    && chmod +x /usr/local/bin/filebrowser \
+    && rm /tmp/fb.tar.gz
+# Entrypoint
 COPY --chown=app:app entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 USER app

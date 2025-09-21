@@ -180,13 +180,11 @@ if [ -d "${COMFY_DIR}/custom_nodes" ]; then
     echo "==================================="
 fi
 
-# 11. ComfyUI starten
+# 11. ComfyUI und Filebrowser starten
 echo "==> Starte ComfyUI auf Port ${COMFY_PORT}..."
 cd "${COMFY_DIR}"
+python main.py --port "${COMFY_PORT}" --listen 0.0.0.0 --disable-auto-launch ${EXTRA_ARGS:-} &
 
-# Mit erweiterten Optionen für bessere Performance
-exec python main.py \
-    --port "${COMFY_PORT}" \
-    --listen 0.0.0.0 \
-    --disable-auto-launch \
-    ${EXTRA_ARGS:-}
+echo "==> Starte Filebrowser auf Port ${FILEBROWSER_PORT} (Root: /workspace/ComfyUI)..."
+filebrowser config set --auth.method noauth || true
+filebrowser -r /workspace/ComfyUI -p ${FILEBROWSER_PORT} -a 0.0.0.0
