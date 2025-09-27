@@ -33,33 +33,6 @@ else
     if [ -f "${COMFY_DIR}/ui_settings.json" ]; then
         cp "${COMFY_DIR}/ui_settings.json" "${WORKSPACE}/backups/ui_settings.json.bak" 2>/dev/null || true
     fi
-    
-    # Git Update (optional, kann deaktiviert werden)
-    if [ "${AUTO_UPDATE:-true}" = "true" ]; then
-        if git diff --quiet && git diff --cached --quiet; then
-            echo "   > Prüfe auf Updates..."
-            git fetch --depth=1 origin "${COMFY_BRANCH:-master}" || true
-            CURRENT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
-            LATEST=$(git rev-parse "origin/${COMFY_BRANCH:-master}" 2>/dev/null || echo "unknown")
-            
-            if [ "${CURRENT}" != "${LATEST}" ] && [ "${CURRENT}" != "unknown" ]; then
-                echo "   > Update verfügbar: ${CURRENT:0:7} → ${LATEST:0:7}"
-                echo "   > Erstelle Backup..."
-                tar -czf "${WORKSPACE}/backups/comfyui-backup-$(date +%Y%m%d-%H%M%S).tar.gz" \
-                    --exclude="${COMFY_DIR}/models" \
-                    --exclude="${COMFY_DIR}/output" \
-                    --exclude="${COMFY_DIR}/input" \
-                    "${COMFY_DIR}" 2>/dev/null || true
-                
-                git reset --hard "origin/${COMFY_BRANCH:-master}"
-                echo "   > Update abgeschlossen"
-            else
-                echo "   > Bereits aktuell"
-            fi
-        else
-            echo "   > Lokale Änderungen gefunden - überspringe Auto-Update"
-        fi
-    fi
 fi
 
 # 2. Python venv initialisieren/aktualisieren
